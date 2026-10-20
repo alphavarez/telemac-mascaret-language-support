@@ -3,6 +3,22 @@
 All notable changes to TELEMAC-MASCARET Language Support are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.0.2] - 2026-10-20
+
+### Changed
+
+- The author's GitHub account was renamed to `alphavarez`; repository, issues
+  and homepage links now point to
+  `alphavarez/telemac-mascaret-language-support`.
+
+## [1.0.1] - 2026-10-20
+
+### Fixed
+
+- Repository, issues and homepage links pointed to a non-existent GitHub
+  account. They were changed to the author's account at the time
+  (`aldougke`).
+
 ## [1.0.0] - 2026-10-20
 
 First release as an independent extension (`alphavarez.telemac-mascaret`).

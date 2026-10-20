@@ -3,7 +3,7 @@
     "publisher": "alphavarez",
     "displayName": "TELEMAC-MASCARET Language Support",
     "description": "Hover documentation, keyword completion and syntax highlighting for TELEMAC-MASCARET steering (.cas) and dictionary (.dico) files, with the complete v8p4 keyword reference bundled: 11 modules, 2,049 keywords.",
-    "version": "1.0.0",
+    "version": "1.0.2",
     "author": {
         "name": "Kevin Douglas Álvarez Segales",
         "url": "https://github.com/alphavarez"
