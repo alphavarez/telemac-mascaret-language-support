@@ -1,0 +1,146 @@
+{
+    "name": "telemac-mascaret",
+    "publisher": "alphavarez",
+    "displayName": "TELEMAC-MASCARET Language Support",
+    "description": "Hover documentation, keyword completion and syntax highlighting for TELEMAC-MASCARET steering (.cas) and dictionary (.dico) files, with the complete v8p4 keyword reference bundled: 11 modules, 2,049 keywords.",
+    "version": "1.0.0",
+    "author": {
+        "name": "Kevin Douglas Álvarez Segales",
+        "url": "https://github.com/alphavarez"
+    },
+    "license": "SEE LICENSE IN LICENSE",
+    "icon": "assets/icon.png",
+    "galleryBanner": {
+        "color": "#0B3954",
+        "theme": "dark"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/alphavarez/telemac-mascaret-language-support.git"
+    },
+    "bugs": {
+        "url": "https://github.com/alphavarez/telemac-mascaret-language-support/issues"
+    },
+    "homepage": "https://github.com/alphavarez/telemac-mascaret-language-support#readme",
+    "keywords": [
+        "telemac",
+        "telemac-mascaret",
+        "telemac2d",
+        "telemac3d",
+        "mascaret",
+        "sisyphe",
+        "gaia",
+        "tomawac",
+        "artemis",
+        "khione",
+        "waqtel",
+        "courlis",
+        "steering file",
+        "cas",
+        "dico",
+        "hydraulics",
+        "hydrodynamics",
+        "sediment transport",
+        "open-telemac"
+    ],
+    "engines": {
+        "vscode": "^1.110.0"
+    },
+    "categories": [
+        "Programming Languages"
+    ],
+    "main": "./dist/extension.js",
+    "contributes": {
+        "languages": [
+            {
+                "id": "casefile",
+                "aliases": [
+                    "Steering File",
+                    "casefile"
+                ],
+                "extensions": [
+                    ".cas",
+                    ".dico"
+                ],
+                "configuration": "./language-configuration.json",
+                "filenamePatterns": [
+                    "???CAS",
+                    "???DICO"
+                ]
+            }
+        ],
+        "grammars": [
+            {
+                "language": "casefile",
+                "scopeName": "source.casefile",
+                "path": "./syntaxes/casefile.tmLanguage.json"
+            }
+        ],
+        "configuration": [
+            {
+                "title": "TELEMAC-MASCARET",
+                "properties": {
+                    "telemacMascaret.additionalDicoFiles": {
+                        "type": "array",
+                        "description": "Paths of additional DICO files to load (added to the TELEMAC-2D keywords).",
+                        "default": [],
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "telemacMascaret.telemacDirectory": {
+                        "type": "string",
+                        "markdownDescription": "Install directory of TELEMAC-MASCARET (e.g. `C:\\Program Files\\TELEMAC\\V8P4`). When set, its DICO files take precedence over the bundled v8p4 reference. If empty, the default Windows location is auto-detected.",
+                        "default": ""
+                    }
+                }
+            }
+        ],
+        "commands": [
+            {
+                "command": "telemacMascaret.reloadDico",
+                "title": "TELEMAC-MASCARET: Reload DICO files"
+            }
+        ],
+        "configurationDefaults": {
+            "[casefile]": {
+                "editor.rulers": [
+                    {
+                        "column": 72
+                    }
+                ]
+            }
+        }
+    },
+    "scripts": {
+        "vscode:prepublish": "pnpm run package",
+        "compile": "pnpm run check-types && pnpm run lint && node esbuild.js",
+        "watch": "npm-run-all -p watch:*",
+        "watch:esbuild": "node esbuild.js --watch",
+        "watch:tsc": "tsc --noEmit --watch --project tsconfig.json",
+        "package": "pnpm run check-types && pnpm run lint && node esbuild.js --production",
+        "compile-tests": "tsc -p . --outDir out",
+        "watch-tests": "tsc -p . -w --outDir out",
+        "pretest": "pnpm run compile-tests && pnpm run compile && pnpm run lint",
+        "check-types": "tsc --noEmit",
+        "lint": "eslint src",
+        "test": "vscode-test",
+        "verify-dico": "esbuild verify/run.ts --bundle --platform=node --format=cjs --alias:vscode=./verify/vscode-stub.js --outfile=verify/run.cjs --log-level=error && node verify/run.cjs",
+        "verify-ext": "esbuild verify/integration.ts --bundle --platform=node --format=cjs --alias:vscode=./verify/vscode-fs-stub.js --outfile=verify/integration.cjs --log-level=error && node verify/integration.cjs"
+    },
+    "devDependencies": {
+        "@eslint/js": "^10.0.1",
+        "@stylistic/eslint-plugin": "^5.10.0",
+        "@types/mocha": "^10.0.10",
+        "@types/node": "22.x",
+        "@types/vscode": "^1.110.0",
+        "@vscode/test-cli": "^0.0.12",
+        "@vscode/test-electron": "^2.5.2",
+        "esbuild": "^0.27.3",
+        "eslint": "^10.1.0",
+        "globals": "^17.4.0",
+        "npm-run-all": "^4.1.5",
+        "typescript": "^5.9.3",
+        "typescript-eslint": "^8.56.1"
+    }
+}

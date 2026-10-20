@@ -1,0 +1,74 @@
+{
+	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+	"name": "Steering File",
+	"patterns": [
+		{
+			"include": "#comments"
+		},
+		{
+			"include": "#keywords"
+		},
+		{
+			"include": "#values"
+		},
+		{
+			"include": "#types"
+		},
+		{
+			"include": "#special"
+		}
+	],
+	"repository": {
+		"comments": {
+			"patterns": [{
+				"name": "comment.line.casefile",
+				"match": "^/.*"
+			}]
+		},
+		"keywords": {
+			"patterns": [{
+				"name": "variable.casefile",
+				"match": "^[A-Z][A-Z0-9 -]*"
+			}]
+		},
+		"values": {
+			"patterns": [
+				{
+					"name": "string.quoted.double.casefile",
+					"begin": "\"",
+					"end": "\""
+				},
+				{
+					"name": "string.quoted.single.casefile",
+					"begin": "'",
+					"end": "'"
+				},
+				{
+					"name": "constant.language.boolean.casefile",
+					"match": "\\b(?:YES|OUI|NO|NON)\\b"
+				},
+				{
+					"name": "constant.numeric.casefile",
+					"match": "(?<!\\w)(\\d+\\.\\d*|\\.\\d+|\\d+)([Ee][-+]?\\d+)?"
+				}
+			]
+		},
+		"types": {
+			"patterns": [
+				{
+					"name": "entity.name.type",
+					"match": "\\b(CARACTERE|ENTIER|INTEGER|LOGICAL|LOGIQUE|REAL|REEL|STRING)\\b"
+				}
+			]
+		},
+		"special": {
+			"patterns": [
+				{
+					"name": "keyword.other.casefile",
+					"match": "\\A&DYN$"
+				}
+			]
+		}
+	},
+	"scopeName": "source.casefile"
+}
