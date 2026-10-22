@@ -3,6 +3,71 @@
 All notable changes to TELEMAC-MASCARET Language Support are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.1.0] - 2026-10-22
+
+### Added
+
+- TELEMAC-MASCARET **v9.1.2** dictionaries (default) next to **v8p4**, both the
+  official `.dico` files from the release tags `v9.1.2` and `v8p4r1`.
+- `telemacMascaret.version` setting (`9.1.2`, `8p4`, `installation`) and a
+  status bar item with a version picker.
+- Allowed values in the hover, plus the meaning of the value currently written
+  (e.g. `4` = MANNING) and the dictionary range when there is one.
+- Value completion after `=`/`:`: numbered options with labels, quoted file
+  formats, YES/NO (OUI/NON for French keywords), output variable codes; the
+  default value is preselected.
+- Error checking:
+  - unknown keywords (with a "did you mean" quick fix, and a note when the
+    keyword exists in the other bundled version);
+  - keywords of another module;
+  - values outside the allowed options;
+  - wrong value types;
+  - missing values;
+  - unquoted strings with spaces;
+  - unclosed strings;
+  - values past column 72.
+
+  Duplicated keywords and values outside the dictionary range are reported as
+  information. Settings `telemacMascaret.diagnostics.enabled` and
+  `.maxLineLength` control the checks. Validated on the 1,535 steering files of
+  the official v9.1.2 and v8p4 examples.
+- Steering-file parser following the TELEMAC syntax rules:
+  - comments between two `/`;
+  - values continued on the next lines;
+  - several keywords on one line;
+  - apostrophes in French keyword names;
+  - `&FIN`.
+- `installation` mode reads `$HOMETEL` when no directory is set; `~` is
+  expanded in paths.
+- `scripts/export_dico.sh` to export the dictionaries of any release from a
+  TELEMAC-MASCARET git clone, and `verify-corpus` scripts to run the checks
+  over a folder of real steering files.
+- Module detection for `ice_` (KHIONE) and `p3d_` (POSTEL-3D) files and from
+  parent folder names; indexed MASCARET keywords (`LOI CONC 1 NOM` for
+  `LOI CONC x NOM`).
+
+### Changed
+
+- To use a local installation, set `telemacMascaret.version` to
+  `installation` (or pick "Local installation" from the status bar). In 1.0.x
+  setting `telemacMascaret.telemacDirectory` was enough; now the bundled 9.1.2
+  dictionaries are used unless `installation` is selected.
+- Hover and completion work on any keyword line (indented, `:` separator, value
+  on the next line), not only on lines starting with the keyword.
+- Help text: LaTeX is converted to Markdown (lists, `\telkey`, module names,
+  Greek letters and math such as k-ε or ν̃); French keywords show the French
+  help.
+- Keyword lookup ignores case and extra spaces.
+
+### Fixed
+
+- Lists written over several lines in DICO files (allowed values, defaults)
+  were cut after the first line.
+- `APPARENCE` was never read.
+- Switching versions could leave keywords of the previous version loaded.
+- About 1,000 spurious warnings per load from over-strict checks of SUBMIT
+  and category fields.
+
 ## [1.0.2] - 2026-10-20
 
 ### Changed

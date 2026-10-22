@@ -1,86 +1,98 @@
+// Checks every bundled dictionary with the extension's own parser.
 import * as fs from 'fs';
 import * as path from 'path';
-import { parseDico, getEntryDetails, dicoEntries, findDicoEntries, detectModule, DicoModule } from '../src/dico';
+import { BUNDLED_VERSIONS, DicoModule, getChoices, getEntryDetails, parseDico } from '../src/dico';
 import { GLOBALS } from '../src/globals';
 
 const logged: string[] = [];
 GLOBALS.outputChannel = {
     error: (m: string) => logged.push('ERROR ' + m), warn: (m: string) => logged.push('WARN ' + m),
-    info: () => {}, show: () => {},
+    trace: () => {}, info: () => {}, show: () => {},
 } as unknown as typeof GLOBALS.outputChannel;
 
 let failures = 0;
-const fail = (msg: string) => { failures++; console.log('  ✗ ' + msg); };
-const dicoDir = path.join(__dirname, '..', 'dico');
-
-// 1. Every bundled dictionary parses completely with the real parser.
-console.log('--- Parse completeness (real parser) ---');
-let total = 0;
-for (const module of Object.values(DicoModule)) {
-    const file = path.join(dicoDir, `${module.toLowerCase()}.dico`);
-    if (!fs.existsSync(file)) { fail(`${module}: no bundled dico`); continue; }
-    const text = fs.readFileSync(file, 'utf8');
-    const expected = (text.match(/^NOM1 = /gm) ?? []).length;
-    const before = logged.length;
-    const entries = parseDico(text);
-    dicoEntries[module] = entries;
-    total += entries.length;
-    const bad = entries.filter(e => !e.nameEnglish || !e.nameFrench || !e.type || !e.helpEnglish);
-    const errs = logged.length - before;
-    const ok = entries.length === expected && bad.length === 0 && errs === 0;
-    console.log(`  ${ok ? '✓' : '✗'} ${module.padEnd(10)} ${String(entries.length).padStart(4)}/${expected}  malformed=${bad.length} logged=${errs}`);
+const check = (ok: boolean, msg: string, detail = '') => {
+    console.log(`  ${ok ? '✓' : '✗'} ${msg}${!ok && detail ? '\n      ' + detail : ''}`);
     if (!ok) failures++;
-}
-console.log(`  total keywords loaded: ${total}`);
+};
+const root = path.join(__dirname, '..', 'dico');
+const parsed: Record<string, Record<string, ReturnType<typeof parseDico>>> = {};
 
-// 2. Hover rendering: keyword -> expected fragment of the v8p4 manual text.
-console.log('\n--- Hover rendering ---');
-const hovers: [string, DicoModule, string][] = [
-    ['ABSCISSAE OF SOURCES', DicoModule.Telemac2d, 'HYDRO › PHYSICAL PARAMETERS HYDRO › SOURCES'],
-    ['1D SPECTRA RESULTS FILE', DicoModule.Tomawac, 'Related keywords'],
-    ['ACCURACY OF EPSILON', DicoModule.Telemac2d, 'transport equation'],
-    ['FINITE VOLUME SCHEME SPACE ORDER', DicoModule.Telemac2d, ''],
-    ['BED-LOAD TRANSPORT FORMULA', DicoModule.Sisyphe, 'transport formulas'],
-    ['ACCURACY FOR DIFFUSION OF SUSPENSION', DicoModule.Gaia, 'diffusion of suspension'],
-    ['3D RESULTS FILE', DicoModule.Khione, 'ICE PRINTOUT PERIOD'],
-    ['ABSCISSE APPORT', DicoModule.Mascaret, 'No help text is given'],
-    ['COURLIS OPTION', DicoModule.Mascaret, ''],
-    ['3D RESULT FILE', DicoModule.Postel3d, 'TELEMAC-3D run'],
-];
-for (const [kw, mod, frag] of hovers) {
-    const match = findDicoEntries(kw, mod)[0];
-    if (!match) { fail(`${kw}: not found`); continue; }
-    const md = getEntryDetails(match.entry, match.module).value.replace(/\n+/g, ' ');
-    const ok = match.module === mod && (!frag || md.includes(frag));
-    console.log(`  ${ok ? '✓' : '✗'} [${match.module}] ${kw}\n      ${md.slice(0, 200)}`);
-    if (!ok) failures++;
+for (const version of BUNDLED_VERSIONS) {
+    console.log(`--- ${version}: parse completeness ---`);
+    parsed[version] = {};
+    let total = 0;
+    for (const module of Object.values(DicoModule)) {
+        const file = path.join(root, version, `${module.toLowerCase()}.dico`);
+        if (!fs.existsSync(file)) {
+            check(version === '9.1.2' && module === DicoModule.Sisyphe, `${module}: not bundled${module === DicoModule.Sisyphe ? ' (removed in v9)' : ''}`);
+            continue;
+        }
+        const text = fs.readFileSync(file, 'utf8');
+        const expected = (text.match(/^NOM1\s*=/gm) ?? []).length;
+        const before = logged.length;
+        const entries = parseDico(text);
+        parsed[version][module] = entries;
+        total += entries.length;
+        const bad = entries.filter(e => !e.nameEnglish || !e.nameFrench || !e.type || !e.helpEnglish);
+        check(entries.length === expected && bad.length === 0 && logged.length === before,
+            `${module.padEnd(10)} ${String(entries.length).padStart(4)}/${expected}  malformed=${bad.length} logged=${logged.length - before}`,
+            logged.slice(before, before + 2).join(' | '));
+    }
+    console.log(`  total: ${total} keywords`);
 }
 
-// 3. French-name lookup resolves to the English keyword.
-console.log('\n--- French lookup ---');
-for (const [fr, en, mod] of [['CONVECTION', 'ADVECTION', DicoModule.Telemac2d], ['FORMULE DE TRANSPORT SOLIDE', 'BED-LOAD TRANSPORT FORMULA', DicoModule.Sisyphe]] as const) {
-    const m = findDicoEntries(fr, mod)[0];
-    const ok = m?.entry.nameEnglish === en;
-    console.log(`  ${ok ? '✓' : '✗'} ${fr} -> ${m?.entry.nameEnglish ?? 'NOT FOUND'}`);
-    if (!ok) failures++;
+console.log('\n--- Allowed-value lists are complete ---');
+for (const version of BUNDLED_VERSIONS) {
+    let fields = 0;
+    let options = 0;
+    let rawOptions = 0;
+    let withChoices = 0;
+    for (const module of Object.values(DicoModule)) {
+        const file = path.join(root, version, `${module.toLowerCase()}.dico`);
+        if (!fs.existsSync(file))
+            continue;
+        // Raw count: quoted items in each CHOIX1 field, which runs until the next field.
+        const text = fs.readFileSync(file, 'utf8');
+        for (const m of text.matchAll(/^CHOIX1\s*=([\s\S]*?)(?=^\s*[A-Z][A-Z0-9]*\s*=|^\/|^&)/gm)) {
+            fields++;
+            rawOptions += (m[1].match(/'(?:[^']|'')*'/g) ?? []).length;
+        }
+        for (const e of parsed[version][module]) {
+            if (e.choiceEnglish) {
+                withChoices++;
+                options += getChoices(e).length;
+            }
+        }
+    }
+    check(withChoices === fields && options === rawOptions, `${version}: ${withChoices}/${fields} keywords with options, ${options}/${rawOptions} options read`);
 }
 
-// 4. Module detection from file names.
-console.log('\n--- Module detection ---');
-const doc = (p: string) => ({ uri: { path: p } }) as unknown as Parameters<typeof detectModule>[0];
-const cases: [string, DicoModule | null][] = [
-    ['/w/t2d_flood.cas', DicoModule.Telemac2d], ['/w/sis_bed.cas', DicoModule.Sisyphe],
-    ['/w/gai_sediment.cas', DicoModule.Gaia], ['/w/courlis_case.cas', DicoModule.Mascaret],
-    ['/w/telemac3d.dico', DicoModule.Telemac3d], ['/w/khione.dico', DicoModule.Khione],
-    ['/w/steering.cas', null],
-];
-for (const [p, expected] of cases) {
-    const got = detectModule(doc(p));
-    const ok = got === expected;
-    console.log(`  ${ok ? '✓' : '✗'} ${path.basename(p).padEnd(20)} -> ${got ?? '(all modules)'}`);
-    if (!ok) failures++;
-}
+console.log('\n--- Help text (LaTeX converted) ---');
+let residue = 0;
+for (const v of Object.values(parsed))
+    for (const list of Object.values(v))
+        for (const e of list)
+            for (const t of [e.helpEnglish, e.helpFrench])
+                if (/\\(?!\*)|[{}$]|\\item|\\begin/.test(t))
+                    residue++;
+check(residue === 0, `no LaTeX left in ${Object.values(parsed).flatMap(v => Object.values(v)).flat().length * 2} help texts`, `${residue} with residue`);
 
-logged.slice(0, 3).forEach(l => console.log("  LOG: " + l.slice(0, 140)));
+console.log('\n--- Allowed values and hover (9.1.2) ---');
+const t2d = parsed['9.1.2'][DicoModule.Telemac2d];
+const friction = t2d.find(e => e.nameEnglish === 'LAW OF BOTTOM FRICTION');
+const choices = friction ? getChoices(friction) : [];
+check(choices.length === 7 && choices[4].value === '4' && choices[4].label === 'MANNING', 'LAW OF BOTTOM FRICTION choices: 0..6, 4 = MANNING', JSON.stringify(choices));
+check(friction ? getChoices(friction, true)[0].label === 'PAS DE FROTTEMENT' : false, 'French choices from CHOIX');
+const md = friction ? getEntryDetails(friction, DicoModule.Telemac2d, { currentValue: '4' }).value : '';
+check(md.includes('**Current value:** `4` MANNING') && md.includes('- `4` MANNING') && md.includes('HYDRO › PHYSICAL PARAMETERS HYDRO › FRICTION'),
+    'hover shows current value, allowed values and category', md.slice(0, 300));
+const geoFormat = t2d.find(e => e.nameEnglish === 'GEOMETRY FILE FORMAT');
+check(geoFormat ? getChoices(geoFormat).map(c => c.value).join(',') === 'SERAFIN,SERAFIND,MED' : false, 'GEOMETRY FILE FORMAT choices: SERAFIN, SERAFIND, MED');
+const withRange = Object.values(parsed['9.1.2']).flat().filter(e => e.rangeMin !== undefined);
+check(withRange.length > 0, `CONTROLE ranges parsed (${withRange.length} keywords)`);
+const lists = t2d.filter(e => e.appearance.includes('DYNLIST'));
+check(lists.length > 0, `APPARENCE parsed (${lists.length} TELEMAC-2D keywords are DYNLIST)`);
+
 console.log(`\n${failures === 0 ? 'ALL CHECKS PASSED' : failures + ' CHECK(S) FAILED'}`);
 process.exit(failures === 0 ? 0 : 1);

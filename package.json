@@ -2,8 +2,8 @@
     "name": "telemac-mascaret",
     "publisher": "alphavarez",
     "displayName": "TELEMAC-MASCARET Language Support",
-    "description": "Hover documentation, keyword completion and syntax highlighting for TELEMAC-MASCARET steering (.cas) and dictionary (.dico) files, with the complete v8p4 keyword reference bundled: 11 modules, 2,049 keywords.",
-    "version": "1.0.2",
+    "description": "Hover documentation, keyword and value completion, error checking and syntax highlighting for TELEMAC-MASCARET steering (.cas) and dictionary (.dico) files. Bundles the official dictionaries of v9.1.2 and v8p4.",
+    "version": "1.1.0",
     "author": {
         "name": "Kevin Douglas Álvarez Segales",
         "url": "https://github.com/alphavarez"
@@ -41,7 +41,9 @@
         "hydraulics",
         "hydrodynamics",
         "sediment transport",
-        "open-telemac"
+        "open-telemac",
+        "linter",
+        "diagnostics"
     ],
     "engines": {
         "vscode": "^1.110.0"
@@ -80,18 +82,49 @@
             {
                 "title": "TELEMAC-MASCARET",
                 "properties": {
-                    "telemacMascaret.additionalDicoFiles": {
-                        "type": "array",
-                        "description": "Paths of additional DICO files to load (added to the TELEMAC-2D keywords).",
-                        "default": [],
-                        "items": {
-                            "type": "string"
-                        }
+                    "telemacMascaret.version": {
+                        "type": "string",
+                        "enum": [
+                            "9.1.2",
+                            "8p4",
+                            "installation"
+                        ],
+                        "enumDescriptions": [
+                            "TELEMAC-MASCARET v9.1.2 (bundled, latest official release).",
+                            "TELEMAC-MASCARET v8p4 (bundled; includes SISYPHE, which was removed in v9).",
+                            "The .dico files of your own TELEMAC-MASCARET installation (see TELEMAC Directory)."
+                        ],
+                        "default": "9.1.2",
+                        "order": 0,
+                        "markdownDescription": "TELEMAC-MASCARET version whose keywords are used for hover, completion and error checking. You can also change it by clicking the version in the status bar."
                     },
                     "telemacMascaret.telemacDirectory": {
                         "type": "string",
-                        "markdownDescription": "Install directory of TELEMAC-MASCARET (e.g. `C:\\Program Files\\TELEMAC\\V8P4`). When set, its DICO files take precedence over the bundled v8p4 reference. If empty, the default Windows location is auto-detected.",
-                        "default": ""
+                        "default": "",
+                        "order": 1,
+                        "markdownDescription": "Root folder of your TELEMAC-MASCARET installation, the one that contains `sources/` (e.g. `~/telemac/source` or `C:\\Program Files\\TELEMAC\\V9P1`). Used when **Version** is `installation`. If empty, `$HOMETEL` is used when VS Code was started with the TELEMAC environment loaded, then the default Windows location."
+                    },
+                    "telemacMascaret.additionalDicoFiles": {
+                        "type": "array",
+                        "default": [],
+                        "items": {
+                            "type": "string"
+                        },
+                        "order": 2,
+                        "description": "Paths of additional DICO files to load (added to the TELEMAC-2D keywords)."
+                    },
+                    "telemacMascaret.diagnostics.enabled": {
+                        "type": "boolean",
+                        "default": true,
+                        "order": 3,
+                        "markdownDescription": "Check steering files for unknown keywords, invalid values, wrong value types, values out of range, duplicated keywords and long lines."
+                    },
+                    "telemacMascaret.diagnostics.maxLineLength": {
+                        "type": "number",
+                        "default": 72,
+                        "minimum": 0,
+                        "order": 4,
+                        "markdownDescription": "Maximum line length of steering files (TELEMAC reads 72 characters per line). Set to `0` to turn off this check."
                     }
                 }
             }
@@ -100,6 +133,10 @@
             {
                 "command": "telemacMascaret.reloadDico",
                 "title": "TELEMAC-MASCARET: Reload DICO files"
+            },
+            {
+                "command": "telemacMascaret.selectVersion",
+                "title": "TELEMAC-MASCARET: Select TELEMAC version"
             }
         ],
         "configurationDefaults": {
@@ -126,7 +163,9 @@
         "lint": "eslint src",
         "test": "vscode-test",
         "verify-dico": "esbuild verify/run.ts --bundle --platform=node --format=cjs --alias:vscode=./verify/vscode-stub.js --outfile=verify/run.cjs --log-level=error && node verify/run.cjs",
-        "verify-ext": "esbuild verify/integration.ts --bundle --platform=node --format=cjs --alias:vscode=./verify/vscode-fs-stub.js --outfile=verify/integration.cjs --log-level=error && node verify/integration.cjs"
+        "verify-ext": "esbuild verify/integration.ts --bundle --platform=node --format=cjs --alias:vscode=./verify/vscode-fs-stub.js --outfile=verify/integration.cjs --log-level=error && node verify/integration.cjs",
+        "verify-corpus": "esbuild verify/corpus.ts --bundle --platform=node --format=cjs --alias:vscode=./verify/vscode-fs-stub.js --outfile=verify/corpus.cjs --log-level=error && node verify/corpus.cjs",
+        "verify-corpus-providers": "esbuild verify/corpus-providers.ts --bundle --platform=node --format=cjs --alias:vscode=./verify/vscode-fs-stub.js --outfile=verify/corpus-providers.cjs --log-level=error && node verify/corpus-providers.cjs"
     },
     "devDependencies": {
         "@eslint/js": "^10.0.1",

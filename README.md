@@ -1,84 +1,154 @@
 # TELEMAC-MASCARET Language Support
 
-Hover documentation, keyword completion and syntax highlighting for
-TELEMAC-MASCARET steering files (`.cas`) and dictionaries (`.dico`) in
-Visual Studio Code.
+Hover documentation, keyword and value completion, error checking and syntax
+highlighting for TELEMAC-MASCARET steering files (`.cas`) and dictionaries
+(`.dico`) in Visual Studio Code.
 
-The complete v8p4 keyword reference is bundled with the extension: 11 modules
-and 2,049 keywords. It works out of the box on Windows, Linux and macOS, with or
-without a local TELEMAC-MASCARET installation.
+The official dictionaries of **TELEMAC-MASCARET v9.1.2** (default) and **v8p4**
+are bundled, so everything works on Windows, Linux and macOS with or without a
+local installation. You can also point the extension at your own installation.
 
 ## Features
 
-- **Hover documentation.** Hover a keyword to see its module, type, dimension,
-  French name, mnemonic (Fortran variable), default value, category and the
-  description from the reference manual.
-- **Keyword completion.** Start typing at the beginning of a line to get English
-  and French keyword names, each with the same documentation attached.
-- **Module detection.** The module is inferred from the file name: `t2d_*.cas`,
-  `t3d_*.cas`, `sis_*.cas`, `gai_*.cas`, `tom_*.cas`, `art_*.cas`, `waq_*.cas`,
-  `khi_*.cas`, `courlis_*.cas`, or a name containing the module
-  (`telemac2d.dico`, `my_gaia_case.cas`). If the module cannot be inferred,
-  hover searches every module and completion offers all keywords.
-- **Syntax highlighting** for steering and dictionary files, with a ruler at
-  column 72.
+- **Hover documentation.** Hover a keyword to see its module, type, French
+  name, Fortran variable, default value, category, the **allowed values** and
+  the description from the reference manual. When the keyword already has a
+  value, the hover tells you what it means, e.g. `LAW OF BOTTOM FRICTION = 4`
+  shows *Current value: 4 MANNING*. Keywords written in French show the French
+  help text.
+- **Keyword completion.** Start typing at the beginning of a line to get the
+  English and French keyword names of the module.
+- **Value completion.** After `=` or `:`, get the allowed values of the
+  keyword: numbered options with their meaning (`4` MANNING), file formats
+  (`'SERAFIN'`, `'MED'`), `YES`/`NO` (or `OUI`/`NON` for French keywords) and
+  output variable codes (`U`, `V`, `H`…) inside `'U,V,H'`. The default value is
+  marked and preselected.
+- **Error checking** as you type:
+  - unknown keywords, with a "did you mean" suggestion and a quick fix;
+  - keywords that exist in the other version: "removed or renamed since v9" or
+    "added in v9.1.2";
+  - keywords that belong to another module;
+  - values that are not among the allowed options;
+  - wrong value types (integer, real, logical);
+  - missing values;
+  - unquoted strings with spaces;
+  - unclosed strings;
+  - values written past column 72, the limit of a steering-file line (comments
+    may go beyond).
 
-## Bundled reference (v8p4)
+  Duplicated keywords and values outside the range given in the dictionary are
+  reported as information.
+- **Version switcher.** The TELEMAC version in use is shown in the status bar;
+  click it to switch between v9.1.2, v8p4 and your local installation.
+- **Module detection** from the file name, using the prefixes of the official
+  examples:
 
-Each dictionary was generated from the "Detail list of keywords" chapter of the
-module's official v8p4 Reference Manual. Every keyword was cross-checked against
-the manual's separate "List of keywords classified according to type" chapter,
-which also supplies the category shown in the hover.
+  | Prefix | Module |
+  | --- | --- |
+  | `t2d_` | TELEMAC-2D |
+  | `t3d_` | TELEMAC-3D |
+  | `gai_` | GAIA |
+  | `sis_` | SISYPHE |
+  | `tom_` | TOMAWAC |
+  | `art_` | ARTEMIS |
+  | `waq_` | WAQTEL |
+  | `ice_` | KHIONE |
+  | `p3d_` | POSTEL-3D |
+  | `stb_` | STBTEL |
+  | `courlis` | MASCARET |
 
-| Module | Keywords |
-| --- | ---: |
-| TELEMAC-2D | 376 |
-| TELEMAC-3D | 348 |
-| Mascaret (including Tracer and Courlis) | 360 |
-| Tomawac | 209 |
-| Sisyphe | 174 |
-| Gaia | 146 |
-| Khione | 133 |
-| Artemis | 118 |
-| Waqtel | 91 |
-| Stbtel | 56 |
-| Postel3D | 38 |
+  A file or parent folder named after a module also works (`telemac2d.dico`,
+  `my_gaia_case.cas`, `gaia/run.cas`). When the module cannot be inferred,
+  keywords of every module are accepted.
+- **Syntax highlighting**, with a ruler at column 72.
 
-The manuals give no description for 202 keywords (163 in Mascaret, 26 in
-Khione, 13 in Sisyphe). For those, the hover says so instead of showing an empty
-box.
+The checks follow the steering-file syntax of the TELEMAC-2D user manual:
+
+- `=` or `:` as separator, and the value may continue on the next lines;
+- `;` between list values;
+- strings between apostrophes;
+- `.` or `,` as decimal point;
+- comments between two `/`;
+- `&FIN` ends the file.
+
+## Tested against the official examples
+
+The checks were run on all 1,535 steering files of the official examples of
+both releases.
+
+| Release | Files | Without findings |
+| --- | ---: | ---: |
+| v9.1.2 | 830 | 815 |
+| v8p4 | 705 | 696 |
+
+The remaining findings are genuine:
+
+- example files that still use `COMPUTATION CONTINUED`, which was removed from
+  TELEMAC-2D in v9;
+- a keyword that exists in neither dictionary;
+- a value past column 72;
+- keywords set twice.
+
+Hover and completion were also run on all 48,634 keyword lines without errors.
+
+## Bundled dictionaries
+
+The `.dico` files are copied unmodified from the official release tags.
+
+| Module | v9.1.2 | v8p4 |
+| --- | ---: | ---: |
+| TELEMAC-2D | 386 | 376 |
+| TELEMAC-3D | 367 | 348 |
+| MASCARET (incl. Tracer and Courlis) | 367 | 360 |
+| TOMAWAC | 224 | 209 |
+| GAIA | 150 | 146 |
+| KHIONE | 133 | 133 |
+| ARTEMIS | 118 | 118 |
+| WAQTEL | 93 | 91 |
+| STBTEL | 56 | 56 |
+| POSTEL-3D | 38 | 38 |
+| SISYPHE | — | 174 |
+| **Total** | **1,932** | **2,049** |
+
+SISYPHE was removed in v9 (GAIA replaces it). A SISYPHE steering file opened
+with v9.1.2 selected shows a notice suggesting v8p4.
 
 ## Settings
 
 | Setting | Description |
 | --- | --- |
-| `telemacMascaret.telemacDirectory` | Installation directory, e.g. `C:\Program Files\TELEMAC\V8P4`. When set, the DICO files of that installation take precedence over the bundled reference, so another version (v8p5, v9…) shows its own keywords. If empty, the default Windows location is detected automatically. |
-| `telemacMascaret.additionalDicoFiles` | Extra DICO files to load, for example a customised dictionary. |
+| `telemacMascaret.version` | `9.1.2` (default), `8p4`, or `installation`. Also changed from the status bar. |
+| `telemacMascaret.telemacDirectory` | Root folder of your installation (the one containing `sources/`), e.g. `~/telemac/source` or `C:\Program Files\TELEMAC\V9P1`. Used with `installation`. If empty, `$HOMETEL` is used when VS Code was started from a terminal with the TELEMAC environment loaded, then the default Windows location. Modules missing from the installation fall back to the bundled v9.1.2. |
+| `telemacMascaret.additionalDicoFiles` | Extra DICO files to load, e.g. a customised dictionary. |
+| `telemacMascaret.diagnostics.enabled` | Turn error checking on or off (default on). |
+| `telemacMascaret.diagnostics.maxLineLength` | Maximum line length (default 72; `0` turns the check off). |
 
-After changing a setting the dictionaries reload automatically. You can also run
-**TELEMAC-MASCARET: Reload DICO files** from the Command Palette.
+Commands: **TELEMAC-MASCARET: Select TELEMAC version** and
+**TELEMAC-MASCARET: Reload DICO files**.
 
-## Regenerating the dictionaries
+## Updating the dictionaries for a new release
 
-`scripts/gen_dico.py` rebuilds a dictionary from a Reference Manual, which is
-useful when a new TELEMAC-MASCARET release comes out:
+From a git clone of the official repository:
 
 ```
-pdftotext -layout telemac2d_reference_v9.pdf telemac2d.txt
-python3 scripts/gen_dico.py telemac2d.txt TELEMAC2D dico/telemac2d.dico
+git -C ~/telemac/source fetch --tags
+scripts/export_dico.sh v9.1.2 dico/9.1.2 ~/telemac/source
 pnpm run verify-dico
 ```
 
-`verify-dico` loads every bundled dictionary with the extension's own parser and
-checks completeness, hover rendering, French-name lookup and module detection.
+`verify-dico` loads every bundled dictionary with the extension's own parser
+and checks that all keywords, options and help texts are read.
+`scripts/gen_dico.py` can instead rebuild a dictionary from a Reference Manual
+PDF when no clone is available.
 
 ## Development
 
 ```
 pnpm install
 pnpm run compile        # type-check, lint and build
-pnpm run verify-dico    # dictionary checks with the extension's parser
-pnpm run verify-ext     # activation, loading, hover and completion (no VS Code needed)
+pnpm run verify-dico    # dictionary checks
+pnpm run verify-ext     # activation, loading, hover, completion and checks (no VS Code needed)
+pnpm run verify-corpus <folder of .cas files> 9.1.2   # findings on real steering files
 pnpm test               # end-to-end tests in a real VS Code instance
 npx @vscode/vsce package --no-dependencies
 ```
@@ -88,20 +158,19 @@ npx @vscode/vsce package --no-dependencies
 This extension started from
 [telemac-language-support](https://github.com/Pasu4/telemac-language-support)
 by Pasu4 (MIT licence), which provided the original syntax grammar, DICO parser
-and hover/completion providers. This version adds the bundled v8p4 reference for
-all modules, multi-module keyword resolution and module detection, a more
-tolerant DICO parser, keyword categories, and the dictionary generator.
+and hover/completion providers. This version adds the bundled dictionaries for
+two releases, the steering-file parser, value completion, error checking, the
+version switcher and the dictionary tooling.
 
 TELEMAC-MASCARET is developed by the TELEMAC-MASCARET Consortium
 (<https://www.opentelemac.org>). This extension is an independent project and is
-not affiliated with or endorsed by the Consortium. The keyword names and
-descriptions come from the openly published v8p4 reference manuals.
+not affiliated with or endorsed by the Consortium. The extension collects no
+telemetry.
 
 ## License
 
 - Extension source code: [MIT](LICENSE).
-- Bundled keyword dictionaries (`dico/*.dico`): derived from the open-source
-  TELEMAC-MASCARET system and distributed under the
-  [GNU GPL v3](dico/COPYING).
+- Bundled dictionaries (`dico/`): official TELEMAC-MASCARET files, distributed
+  under the [GNU GPL v3](dico/COPYING).
 
 See [LICENSE](LICENSE) for details.

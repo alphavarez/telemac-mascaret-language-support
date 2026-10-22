@@ -1,37 +1,37 @@
 import * as vscode from 'vscode';
-import { CasefileHoverProvider } from './hover';
+import { CasefileCompletionItemProvider, COMPLETION_TRIGGERS } from './completion';
+import { CONFIG_SECTION } from './config';
 import { loadDico } from './dico';
+import { CasDiagnostics, CasQuickFixes } from './diagnostics';
 import { GLOBALS } from './globals';
-import { CasefileCompletionItemProvider } from './completion';
+import { CasefileHoverProvider } from './hover';
+import { SELECT_VERSION_COMMAND, VersionStatus, selectVersion } from './status';
 
 export async function activate(context: vscode.ExtensionContext) {
     // Set up globals
     // This must be done first to ensure definitive assignments are initialized
     GLOBALS.outputChannel = vscode.window.createOutputChannel('TELEMAC-MASCARET', { log: true });
 
-    // Register services
-    const disposables = vscode.Disposable.from(
-        // Commands
+    const diagnostics = new CasDiagnostics();
+    const status = new VersionStatus();
+
+    context.subscriptions.push(
+        diagnostics,
+        status,
         vscode.commands.registerCommand('telemacMascaret.reloadDico', () => reloadDico(context)),
-        // Hover provider
-        vscode.languages.registerHoverProvider(
-            'casefile',
-            new CasefileHoverProvider(),
-        ),
-        // Completion item provider
-        vscode.languages.registerCompletionItemProvider(
-            'casefile',
-            new CasefileCompletionItemProvider(),
-        ),
-        // Reload when the relevant settings change
+        vscode.commands.registerCommand(SELECT_VERSION_COMMAND, selectVersion),
+        vscode.languages.registerHoverProvider('casefile', new CasefileHoverProvider()),
+        vscode.languages.registerCompletionItemProvider('casefile', new CasefileCompletionItemProvider(), ...COMPLETION_TRIGGERS),
+        vscode.languages.registerCodeActionsProvider('casefile', new CasQuickFixes(), { providedCodeActionKinds: CasQuickFixes.kinds }),
         vscode.workspace.onDidChangeConfiguration(e => {
-            if (e.affectsConfiguration('telemacMascaret.telemacDirectory') || e.affectsConfiguration('telemacMascaret.additionalDicoFiles'))
+            if (['version', 'telemacDirectory', 'additionalDicoFiles'].some(k => e.affectsConfiguration(`${CONFIG_SECTION}.${k}`)))
                 reloadDico(context);
+            else if (e.affectsConfiguration(`${CONFIG_SECTION}.diagnostics`))
+                diagnostics.validateAll();
         }),
     );
-    await loadDico(context.extensionUri);
 
-    context.subscriptions.push(disposables);
+    await loadDico(context.extensionUri);
 }
 
 export function deactivate() {}
